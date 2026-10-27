@@ -10,7 +10,7 @@
   <title>SongScout</title>
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/styles.css?v=2">
 </head>
 <body>
   <main class="wrap">
@@ -20,11 +20,26 @@
       <p>Share the songs you love with your friends.</p>
       <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
       <span class="pill">Coming soon to the App Store</span>
-      <span class="scroll-hint" aria-hidden="true">Scroll</span>
+      <a class="scroll-hint" href="#showcase">Take a closer look <span aria-hidden="true">↓</span></a>
     </section>
   </main>
-  <section class="scrolly" aria-hidden="true">
-    <div class="sticky"><canvas></canvas></div>
+  <section class="scrolly" id="showcase" aria-label="Inside SongScout">
+    <div class="sticky">
+      <div class="scene-heading">
+        <p class="eyebrow">Inside SongScout</p>
+        <h2 data-scene-title>Your group. Every little detail.</h2>
+      </div>
+      <div class="scene-viewport" role="img" aria-label="Illustrated SongScout group screen: group controls, weekly recap, song composer, music previews, reactions and mystery picks. UI layers separate and return as you scroll.">
+        <div class="phone-preview" aria-hidden="true"><canvas></canvas></div>
+        <canvas class="scene-canvas" aria-hidden="true"></canvas>
+      </div>
+      <div class="scene-caption">
+        <p data-scene-description>Group controls, weekly recap and the song composer.</p>
+        <div class="scene-progress" aria-hidden="true"><span></span></div>
+        <span class="scene-note">App preview · Sample content<span class="motion-hint"> · Scroll to explore</span></span>
+      </div>
+    </div>
+    <noscript><p class="wrap">Enable JavaScript to explore the app preview.</p></noscript>
   </section>
   <footer class="site-footer">
     <div class="wrap">
@@ -37,6 +52,6 @@
       </nav>
     </div>
   </footer>
-  <script type="module" src="assets/main.js"></script>
+  <script type="module" src="assets/main.js?v=2"></script>
 </body>
 </html>
