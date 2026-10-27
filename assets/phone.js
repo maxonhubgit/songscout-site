@@ -1,7 +1,7 @@
 // Editable app layers on the existing three.js phone.
 import * as THREE from './vendor/three.module.min.js';
 import { UI, layers, drawChrome } from './showcase-ui.js';
-import { layerLift } from './showcase-state.js';
+import { clamp, layerLift } from './showcase-state.js';
 import { animateShowcase } from './showcase-motion.js';
 
 const SCREEN = { w: 1.36, h: 1.36 * UI.height / UI.width, r: 0.18 };
@@ -28,7 +28,7 @@ function roundedPlane(w, h, r) {
 }
 
 export function start(stage, canvas, onError) {
-  let renderer, stop = () => {}, disposed = false, shaderFailed = false;
+  let renderer, stop = () => {}, disposed = false, shaderFailed = false, textureScale = 3;
   const textures = new Set(), geometries = new Set(), materials = new Set();
   const scene = new THREE.Scene();
   function dispose() {
@@ -51,21 +51,23 @@ export function start(stage, canvas, onError) {
   function texture(w, h, draw) {
     // Avoid oversized textures on integrated GPUs and Safari.
     const surface = document.createElement('canvas');
-    const ratio = Math.min(2, renderer.capabilities.maxTextureSize / Math.max(w, h));
+    // Lifted layers come closer to the camera, so draw them well above screen resolution.
+    const ratio = Math.min(textureScale, renderer.capabilities.maxTextureSize / Math.max(w, h));
     surface.width = Math.ceil(w * ratio); surface.height = Math.ceil(h * ratio);
     const ctx = surface.getContext('2d');
     if (!ctx) throw new Error('Canvas textures are unavailable');
     ctx.scale(ratio, ratio); draw(ctx, w, h);
     const map = new THREE.CanvasTexture(surface);
     map.colorSpace = THREE.SRGBColorSpace;
-    map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    map.anisotropy = renderer.capabilities.getMaxAnisotropy();
     textures.add(map);
     return map;
   }
   try {
     // Do not force the discrete/high-performance GPU on dual-GPU Macs.
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'default' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    textureScale = Math.min(window.innerWidth, window.innerHeight) < 600 ? 3 : 4;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.localClippingEnabled = true;
@@ -128,21 +130,40 @@ export function start(stage, canvas, onError) {
       camera.position.z = worldHeight / (2 * Math.tan(THREE.MathUtils.degToRad(14))) + 0.45;
       camera.updateProjectionMatrix();
     };
-    const render = state => {
+    const render = (state, motion) => {
+      const { time, lean, pointer, life } = motion;
       const lift = state.lift;
-      phone.rotation.set(-0.07 * lift, -0.5 * lift, 0.025 * lift);
-      phone.position.set(0.20 * lift, 0, 0);
+      // Organic float: layered slow sines that never quite repeat
+      const n1 = Math.sin(time * 0.53) + 0.5 * Math.sin(time * 1.17 + 1.3);
+      const n2 = Math.sin(time * 0.41 + 2.1) + 0.5 * Math.sin(time * 0.97 + 0.4);
+      const n3 = Math.sin(time * 0.67 + 4.2) + 0.4 * Math.sin(time * 1.43 + 0.9);
+      // A lazy S-curve along the scroll, so the phone wanders rather than turns on a hinge
+      const path = Math.sin(state.progress * Math.PI * 2);
+      // Front always faces the viewer: yaw stays within about ±32°
+      phone.rotation.y = clamp(-0.4 * lift + 0.14 * path + 0.05 * n1 * life + 0.14 * pointer.x, -0.56, 0.4);
+      phone.rotation.x = -0.06 * lift + 0.035 * n2 * life - 0.08 * pointer.y + 0.2 * lean;
+      phone.rotation.z = 0.035 * path - 0.02 * n3 * life - 0.06 * lean;
+      phone.position.set(0.16 * lift + 0.1 * path, 0.05 * n2 * life - 0.06 * lean, 0);
       phone.updateMatrixWorld(true);
       clippingPlanes.forEach((plane, i) => plane.copy(localPlanes[i]).applyMatrix4(phone.matrixWorld));
       for (const { face, layer } of faces) {
         const y = layer.y - state.scroll;
         face.visible = y + layer.h > UI.top && y < UI.bottom;
         if (!face.visible) continue;
-        const amount = layerLift(lift, layer.level);
+        const s = layer.seed;
+        const amount = layerLift(lift, layer.level, s);
+        // Each piece drifts its own way and bobs on its own beat while it floats
+        const bob = Math.sin(time * (0.8 + s * 0.7) + s * 6.28) * amount;
+        const sway = Math.sin(time * (0.6 + s * 0.5) + s * 3.1) * amount;
         face.position.set(
-          (layer.x + layer.w / 2 - UI.width / 2) * POINT - amount * layer.depth * 0.10,
-          SCREEN.h / 2 - (y + layer.h / 2) * POINT,
-          front + 0.012 + layer.depth * 0.003 + amount * layer.depth * (compact ? 0.72 : 0.92),
+          (layer.x + layer.w / 2 - UI.width / 2) * POINT + amount * layer.depth * (-0.1 + (s - 0.5) * 0.24),
+          SCREEN.h / 2 - (y + layer.h / 2) * POINT + amount * layer.depth * (s - 0.45) * 0.14 + bob * 0.018,
+          front + 0.012 + layer.depth * 0.003 + amount * layer.depth * (compact ? 0.72 : 0.92) * (1 + 0.06 * sway),
+        );
+        face.rotation.set(
+          amount * (s - 0.5) * 0.22 + bob * 0.025,
+          amount * (0.08 + (s - 0.5) * 0.24) + sway * 0.03,
+          amount * (s - 0.5) * 0.14,
         );
       }
       renderer.render(scene, camera);

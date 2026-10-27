@@ -4,28 +4,32 @@ import { sceneState, layerLift } from '../assets/showcase-state.js';
 import { UI, layers } from '../assets/showcase-ui.js';
 import { animateShowcase } from '../assets/showcase-motion.js';
 
-test('both exploded views fully reassemble, including the end of the page', () => {
-  for (const progress of [0, 0.44, 0.5, 0.6, 1]) {
-    assert.equal(sceneState(progress).lift, 0);
-  }
-  assert.equal(sceneState(0.28).lift, 1);
-  assert.equal(sceneState(0.81).lift, 1);
+test('the UI is together at both ends and drifts apart twice, softly', () => {
+  assert.equal(sceneState(0).lift, 0);
+  assert.equal(sceneState(1).lift, 0);
+  const lifts = Array.from({ length: 1001 }, (_, i) => sceneState(i / 1000).lift);
+  const firstPeak = Math.max(...lifts.slice(50, 450));
+  const secondPeak = Math.max(...lifts.slice(550, 970));
+  const valley = Math.min(...lifts.slice(400, 650));
+  assert.ok(firstPeak > 0.8 && secondPeak > 0.8, 'both breaths open up');
+  assert.ok(valley < firstPeak - 0.3 && valley < secondPeak - 0.3, 'the layers gather in between');
+  for (let i = 1; i < lifts.length; i++) assert.ok(Math.abs(lifts[i] - lifts[i - 1]) < 0.02, 'no jumps');
   for (const layer of layers) {
-    assert.equal(layerLift(0, layer.level), 0);
-    assert.equal(layerLift(1, layer.level), 1);
+    assert.equal(layerLift(0, layer.level, layer.seed), 0);
+    assert.equal(layerLift(1, layer.level, layer.seed), 1);
+    assert.ok(layer.seed >= 0 && layer.seed < 1, layer.id);
   }
 });
 
-test('the app only scrolls while its UI is assembled', () => {
+test('the feed glides forward and stays inside its range', () => {
   let previousScroll = 0;
   for (let i = 0; i <= 1000; i++) {
     const state = sceneState(i / 1000);
     assert.ok(state.lift >= 0 && state.lift <= 1);
-    assert.ok(state.scroll >= previousScroll);
-    if (state.scroll > previousScroll) assert.equal(state.lift, 0);
+    assert.ok(state.scroll >= previousScroll && state.scroll <= 548);
     previousScroll = state.scroll;
   }
-  assert.ok(previousScroll > 0);
+  assert.equal(previousScroll, 548);
 });
 
 test('reverse scroll is deterministic and overscroll is clamped', () => {
@@ -53,7 +57,7 @@ test('editable UI faces stay within the phone width and details sit above cards'
   assert.ok(feed.y + feed.h - end.scroll <= UI.bottom);
 });
 
-test('scroll rendering stops when settled, resumes on scroll, and releases listeners', () => {
+test('idle float rests after a while, pauses offscreen, resumes on scroll, and releases listeners', () => {
   const saved = new Map(['window', 'document', 'requestAnimationFrame', 'cancelAnimationFrame', 'IntersectionObserver', 'ResizeObserver'].map(key => [key, globalThis[key]]));
   class Events {
     listeners = new Map();
@@ -79,14 +83,14 @@ test('scroll rendering stops when settled, resumes on scroll, and releases liste
   const stage = { dataset: {}, querySelector: key => nodes[key], getBoundingClientRect: () => ({ top, height: 4800 }) };
   let last, renders = 0, time = 0, stop;
   function settle() {
-    for (let i = 0; frames.size && i < 300; i++) {
+    for (let i = 0; frames.size && i < 4000; i++) {
       const pending = [...frames.values()]; frames.clear(); time += 16;
       pending.forEach(callback => callback(time));
     }
-    assert.equal(frames.size, 0, 'animation should stop requesting idle frames');
+    assert.equal(frames.size, 0, 'idle animation should come to rest');
   }
   try {
-    stop = animateShowcase(stage, state => { last = state; renders++; }, () => {}, error => { throw error; });
+    stop = animateShowcase(stage, (state, motion) => { assert.ok(Number.isFinite(motion.time) && Math.abs(motion.lean) <= 1); last = state; renders++; }, () => {}, error => { throw error; });
     settle();
     top = -3800; window.listeners.get('scroll')(); settle();
     assert.equal(last.progress, 1); assert.equal(last.lift, 0);
@@ -97,7 +101,7 @@ test('scroll rendering stops when settled, resumes on scroll, and releases liste
     top = -1000; window.listeners.get('scroll')(); settle();
     assert.equal(renders, before);
     intersection([{ isIntersecting: true }]); settle();
-    assert.ok(last.lift > 0.99);
+    assert.ok(last.lift > 0.8);
     document.hidden = true; document.listeners.get('visibilitychange')();
     top = -3800; window.listeners.get('scroll')(); settle();
     assert.ok(last.progress < 1);

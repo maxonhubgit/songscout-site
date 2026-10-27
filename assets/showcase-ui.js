@@ -1,3 +1,5 @@
+import { seedFor } from './showcase-state.js';
+
 // Editable illustration of MainView.swift, SongCard.swift and RichSongView.swift.
 // Demo content only. Layout, card faces and individual controls live here;
 // the same drawings power the 3D layers and the non-WebGL preview.
@@ -100,7 +102,7 @@ function symbol(ctx, name, x, y, color = BRAND.ink, size = 20) {
 // level distinguishes a card's surface, its content and its controls.
 export const layers = [];
 function add(id, x, y, w, h, depth, level, draw) {
-  layers.push({ id, x, y, w, h, depth, level, draw });
+  layers.push({ id, x, y, w, h, depth, level, draw, seed: seedFor(id) });
 }
 
 add('header', 16, 77, 358, 98, 0.2, 0, (ctx) => {
