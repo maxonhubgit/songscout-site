@@ -261,6 +261,10 @@ export function start(stage, canvas, onError) {
     // The screen faces the eyes, turned slightly toward the shoulder camera
     probe.position.copy(PHONE_HIGH); probe.lookAt(EYES.clone().add(new THREE.Vector3(0.55, 0.15, 0.2)));
     highQuat.copy(probe.quaternion);
+    // In the close-up the hand turns the screen toward the camera, upright
+    const facingQuat = new THREE.Quaternion();
+    probe.position.copy(PHONE_HIGH); probe.up.set(0, 1, 0); probe.lookAt(OVER_SHOULDER_EYE);
+    facingQuat.copy(probe.quaternion);
 
     // ---------- camera path ----------
     const viewport = stage.querySelector('.scene-viewport');
@@ -298,7 +302,9 @@ export function start(stage, canvas, onError) {
       holder.position.lerpVectors(PHONE_LOW, PHONE_HIGH, raise);
       holder.position.y += Math.sin(raise * Math.PI) * 0.35 + 0.02 * Math.sin(time * 1.1) * life;
       holder.quaternion.slerpQuaternions(lowQuat, highQuat, raise);
-      phone.rotation.set(-0.05 * lift + 0.08 * lean, -0.22 * lift + 0.05 * pointer.x, 0.02 * Math.sin(time * 0.8) * life);
+      // Most of the way toward the camera while it closes in; a slight angle keeps the depth visible
+      holder.quaternion.slerp(facingQuat, ease(state.zoom) * 0.8);
+      phone.rotation.set(0.06 * lean, -0.06 * lift + 0.04 * pointer.x, 0.01 * Math.sin(time * 0.8) * life);
       holder.updateMatrixWorld(true);
 
       // Right arm reaches the wrist under the phone; left arm hangs relaxed
@@ -333,7 +339,7 @@ export function start(stage, canvas, onError) {
       camPos.y += 0.03 * Math.sin(time * 0.9 + 1) * life - 0.08 * pointer.y - 0.1 * lean;
       camera.position.copy(camPos);
       // Closing in, the camera rolls with the phone so the screen reads upright
-      camera.up.set(0, 1, 0).lerp(phoneUp, zoom * 0.75).normalize();
+      camera.up.set(0, 1, 0).lerp(phoneUp, zoom).normalize();
       camera.lookAt(lookAt);
 
       // Screen layers, as before (in phone units)
