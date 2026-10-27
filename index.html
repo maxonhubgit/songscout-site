@@ -10,7 +10,7 @@
   <title>SongScout</title>
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/styles.css?v=6">
+  <link rel="stylesheet" href="assets/styles.css?v=7">
 </head>
 <body>
   <section class="scrolly" id="showcase" data-panel="intro" aria-label="SongScout">
@@ -23,19 +23,24 @@
         <div class="panel-intro">
           <img class="app-icon" src="assets/icon-512.png" alt="SongScout app icon" width="72" height="72">
           <h1>SongScout</h1>
-          <p>Share the songs you love with your friends.</p>
+          <p class="panel-text">Share the songs you love with your friends.</p>
           <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-          <span class="pill">Coming soon to the App Store</span>
-          <span class="scroll-hint motion-hint">Scroll to look closer <span aria-hidden="true">↓</span></span>
+          <div class="panel-foot">
+            <span class="pill">Coming soon to the App Store</span>
+            <span class="scroll-hint motion-hint">Scroll to look closer <span aria-hidden="true">↓</span></span>
+          </div>
         </div>
         <div class="panel-explain" aria-live="polite">
-          <p class="eyebrow">Inside SongScout</p>
+          <img class="app-icon" src="assets/icon-512.png" alt="" width="72" height="72">
           <div class="panel-body" data-explain-body>
+            <p class="eyebrow">Inside SongScout</p>
             <h2 data-explain-title>Your group, at a glance</h2>
-            <p data-explain-text>Every group is private. Its name, who is in it, and all your other groups are one tap away.</p>
+            <p class="panel-text" data-explain-text>Every group is private. Its name, who is in it, and all your other groups are one tap away.</p>
           </div>
-          <div class="panel-progress" aria-hidden="true"><span></span></div>
-          <span class="panel-note">App preview · Sample content</span>
+          <div class="panel-foot">
+            <div class="panel-progress" aria-hidden="true"><span></span></div>
+            <span class="panel-note">App preview · Sample content</span>
+          </div>
         </div>
       </aside>
     </div>

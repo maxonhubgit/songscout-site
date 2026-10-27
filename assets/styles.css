@@ -106,7 +106,9 @@ tr:last-child td { border-bottom: 0; }
 
 .panel {
   position: absolute; z-index: 2; left: 28px; top: 50%;
-  width: min(380px, 34vw); box-sizing: border-box; padding: 34px 32px 30px;
+  /* One size for every panel, so it never jumps when the content changes */
+  width: min(380px, 34vw); height: min(540px, calc(100svh - 56px));
+  box-sizing: border-box; padding: 34px 32px 30px;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.9);
   -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
@@ -115,39 +117,41 @@ tr:last-child td { border-bottom: 0; }
   transition: opacity 0.45s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.6s;
 }
 .scrolly[data-panel="hidden"] .panel { opacity: 0; visibility: hidden; transform: translate(-36px, -50%); pointer-events: none; }
-.panel-intro, .panel-explain { display: none; }
-.scrolly:not([data-panel="explain"]) .panel-intro { display: block; }
-.scrolly[data-panel="explain"] .panel-explain { display: block; }
-.panel .app-icon { width: 72px; height: 72px; border-radius: 17px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12); }
-.panel h1 { font-size: 44px; line-height: 1.05; letter-spacing: -1.2px; margin: 22px 0 10px; }
-.panel-intro p { margin: 0; font-size: 18px; color: var(--muted); }
+.panel-intro, .panel-explain { display: none; height: 100%; flex-direction: column; align-items: flex-start; }
+.scrolly:not([data-panel="explain"]) .panel-intro { display: flex; }
+.scrolly[data-panel="explain"] .panel-explain { display: flex; }
+/* Shared look: icon, large title, grey text, footer at the bottom */
+.panel .app-icon { flex: none; width: 72px; height: 72px; border-radius: 17px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12); }
+.panel h1, .panel h2 { font-size: 38px; line-height: 1.08; letter-spacing: -1px; font-weight: 700; margin: 22px 0 12px; }
+.panel .panel-text { margin: 0; font-size: 18px; line-height: 1.45; color: var(--muted); }
+.panel .eyebrow { margin: 22px 0 -12px; }
 .panel .eq { justify-content: flex-start; margin-top: 22px; }
-.panel .pill { margin-top: 24px; }
-.scroll-hint { display: none; margin-top: 22px; font-size: 13px; color: var(--muted); }
+.panel-foot { margin-top: auto; width: 100%; display: flex; flex-direction: column; align-items: flex-start; }
+.panel .pill { margin-top: 0; }
+.scroll-hint { display: none; margin-top: 16px; font-size: 13px; color: var(--muted); }
 .is-animated .scroll-hint { display: block; }
-.eyebrow { margin: 0 0 10px; color: var(--ember); font-size: 11px; font-weight: 700; letter-spacing: 1.7px; text-transform: uppercase; }
-.panel h2 { margin: 0 0 10px; font-size: 26px; line-height: 1.15; letter-spacing: -0.5px; }
-.panel-explain p { margin: 0; color: #2c2c30; font-size: 16px; line-height: 1.5; }
+.eyebrow { color: var(--ember); font-size: 11px; font-weight: 700; letter-spacing: 1.7px; text-transform: uppercase; }
+.panel-body { width: 100%; }
 .panel-body.is-new { animation: panel-in 0.45s ease both; }
 @keyframes panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.panel-progress { width: 100%; height: 2px; margin: 26px 0 0; border-radius: 2px; overflow: hidden; background: var(--line); }
+.panel-progress { width: 100%; height: 2px; border-radius: 2px; overflow: hidden; background: var(--line); }
 .panel-progress span { display: block; height: 100%; background: var(--ember); transform: scaleX(0); transform-origin: left; }
-.panel-note { display: block; margin-top: 12px; font-size: 11px; color: var(--muted); }
+.panel-note { display: block; margin-top: 12px; font-size: 13px; color: var(--muted); }
 
 /* Phones and narrow windows: the panel becomes a sheet at the bottom */
 @media (max-width: 899px) {
-  .panel { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; padding: 20px 22px; border-radius: 22px; transform: none; }
+  .panel { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; height: 296px; padding: 20px 22px; border-radius: 22px; transform: none; }
   .scrolly[data-panel="hidden"] .panel { transform: translateY(28px); }
-  .panel .app-icon { width: 52px; height: 52px; border-radius: 12px; }
-  .panel h1 { font-size: 30px; margin: 14px 0 6px; }
-  .panel-intro p { font-size: 15px; }
-  .panel .eq { margin-top: 14px; height: 18px; }
-  .panel .pill { margin-top: 14px; padding: 8px 14px; font-size: 13px; }
-  .scroll-hint { margin-top: 12px; }
-  .panel h2 { font-size: 20px; margin-bottom: 6px; }
-  .panel-explain p { font-size: 14px; line-height: 1.45; }
-  .panel-progress { margin-top: 16px; }
+  .panel .app-icon { width: 44px; height: 44px; border-radius: 11px; }
+  .panel h1, .panel h2 { font-size: 26px; margin: 12px 0 6px; letter-spacing: -0.6px; }
+  .panel .panel-text { font-size: 15px; line-height: 1.4; }
+  .panel .eyebrow { margin: 12px 0 -6px; }
+  .panel .eq { margin-top: 12px; height: 18px; }
+  .panel .pill { padding: 8px 14px; font-size: 13px; }
+  .scroll-hint { margin-top: 10px; }
+  .panel-note { margin-top: 8px; font-size: 12px; }
   .scrolly.is-animated { height: 680vh; height: 680svh; }
+}
 }
 @media (prefers-reduced-motion: reduce) {
   .panel, .panel-body.is-new { transition: none; animation: none; }
