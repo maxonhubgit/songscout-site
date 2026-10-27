@@ -12,7 +12,7 @@ const POINT = SCREEN.w / UI.width;
 const PHONE_SCALE = 0.5; // phone units → world units (1 world unit ≈ 10 cm)
 
 const COLORS = {
-  skin: 0xe8c3a0,
+  skin: 0xe9bf9b,
   hair: 0x3b2c25,
   shirt: 0xf3f3f0,
   ink: 0x16161a,
@@ -166,51 +166,57 @@ export function start(stage, canvas, onError) {
     });
 
     // ---------- the hand, part of the phone so it always holds it ----------
-    // A right hand as in a typical one-handed grip (phone units, screen facing +z):
-    // palm on the back, thumb up along the right edge, four fingers curling around the left edge.
-    const skin = clay(COLORS.skin, 0.55);
-    const nail = clay(0xf3d9c9, 0.35);
+    // A right hand in a one-handed grip (phone units, screen facing +z, back of the phone at z = -front):
+    // palm behind the phone, thumb up along the right edge, four fingers curling around the left edge.
+    const skin = clay(COLORS.skin, 0.5);
     const hand = new THREE.Group(); phone.add(hand);
-    const yAxis = new THREE.Vector3(0, 1, 0);
-    function bone(a, b, radius, material = skin) {
-      const dir = b.clone().sub(a);
-      const segment = mesh(new THREE.CapsuleGeometry(radius, Math.max(0.001, dir.length()), 6, 14), material);
-      segment.position.copy(a).add(b).multiplyScalar(0.5);
-      segment.quaternion.setFromUnitVectors(yAxis, dir.normalize());
-      hand.add(segment);
-      return segment;
-    }
-    function knob(at, radius, scale = [1, 1, 1], material = skin) {
-      const ball = mesh(new THREE.SphereGeometry(radius, 18, 14), material);
-      ball.position.copy(at); ball.scale.set(...scale); hand.add(ball);
-      return ball;
-    }
     const P = (x, y, z) => new THREE.Vector3(x, y, z);
     const edge = PHONE.w / 2;
-    // Palm and heel behind the lower half, wrist leaving at the bottom right
-    knob(P(0.22, -0.82, -0.36), 1, [0.72, 0.78, 0.22]);
-    knob(P(0.5, -1.38, -0.32), 1, [0.48, 0.42, 0.26]);
-    // Thumb: a pad at the bottom right, then two segments pointing up along the right edge
-    knob(P(0.66, -1.12, -0.1), 1, [0.24, 0.36, 0.24]);
-    const thumbBase = P(edge + 0.06, -0.98, -0.02), thumbJoint = P(edge + 0.07, -0.34, 0.05), thumbTip = P(edge - 0.01, 0.22, 0.1);
-    bone(thumbBase, thumbJoint, 0.135);
-    knob(thumbJoint, 0.13);
-    bone(thumbJoint, thumbTip, 0.12);
-    knob(thumbTip.clone().add(P(0.035, 0.02, 0.06)), 0.07, [0.9, 1.3, 0.35], nail).rotation.z = -0.1;
-    // Fingers: index on top, little finger lowest and shortest
-    [[0.12, 0.12, 0.0], [-0.24, 0.123, 0.0], [-0.6, 0.118, 0.02], [-0.93, 0.104, 0.06]].forEach(([y, r, tuck]) => {
-      const knuckle = P(-0.22, y - 0.08, -0.38);
-      const back = P(-edge - 0.08 + tuck, y - 0.02, -0.2);
-      const side = P(-edge - 0.1 + tuck, y, 0.02);
-      const tip = P(-edge + 0.03 + tuck, y + 0.02, 0.12);
-      bone(knuckle, back, r);
-      knob(back, r * 0.98);
-      bone(back, side, r * 0.95);
-      knob(side, r * 0.93);
-      bone(side, tip, r * 0.85);
-      knob(tip.clone().add(P(-0.05, 0, 0.04)), r * 0.55, [0.45, 0.9, 0.9], nail);
+    /** A smooth finger-like shape along a curve, tapering from r0 to r1, with rounded ends */
+    function taperedTube(points, r0, r1, segments = 48) {
+      const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+      const geometry = new THREE.TubeGeometry(curve, segments, 1, 24, false);
+      const position = geometry.attributes.position, center = new THREE.Vector3(), vertex = new THREE.Vector3();
+      for (let ring = 0; ring <= segments; ring++) {
+        const t = ring / segments;
+        curve.getPointAt(t, center);
+        const radius = r0 + (r1 - r0) * t;
+        for (let i = 0; i <= 24; i++) {
+          const index = ring * 25 + i;
+          vertex.fromBufferAttribute(position, index).sub(center).multiplyScalar(radius).add(center);
+          position.setXYZ(index, vertex.x, vertex.y, vertex.z);
+        }
+      }
+      position.needsUpdate = true;
+      hand.add(mesh(geometry, skin));
+      const end = mesh(new THREE.SphereGeometry(r1, 24, 18), skin);
+      end.position.copy(points[points.length - 1]); hand.add(end);
+      const start = mesh(new THREE.SphereGeometry(r0, 24, 18), skin);
+      start.position.copy(points[0]); hand.add(start);
+    }
+    function blob(at, scale) {
+      const shape = mesh(new THREE.SphereGeometry(1, 40, 30), skin);
+      shape.position.copy(at); shape.scale.set(...scale); hand.add(shape);
+      return shape;
+    }
+    // Palm: one smooth shape fully behind the phone (its front stays behind the back glass)
+    const palmDepth = 0.2;
+    blob(P(0.18, -0.78, -front - 0.03 - palmDepth), [0.82, 0.92, palmDepth]);
+    // Ball of the thumb beside the right edge, heel of the hand below the phone
+    blob(P(edge + 0.24, -1.22, -0.2), [0.22, 0.34, 0.22]);
+    blob(P(0.5, -PHONE.h / 2 - 0.26, -0.3), [0.36, 0.26, 0.24]);
+    // Thumb: up along the right edge, leaning in, its tip resting on the frame in the upper third
+    taperedTube([P(edge + 0.2, -1.0, -0.12), P(edge + 0.2, -0.42, 0.0), P(edge + 0.08, 0.18, 0.1), P(edge - 0.06, 0.52, 0.13)], 0.18, 0.125);
+    // Fingers: from the palm, around the left edge and out past it, close together, index on top
+    [[0.06, 0.165, 0.0], [-0.26, 0.17, 0.02], [-0.57, 0.16, 0.05], [-0.86, 0.14, 0.1]].forEach(([y, r, inset]) => {
+      taperedTube([
+        P(-0.15, y - 0.12, -front - 0.24),
+        P(-edge - 0.06 + inset, y - 0.04, -front - 0.16),
+        P(-edge - 0.2 + inset, y + 0.01, -0.02),
+        P(-edge - 0.06 + inset, y + 0.05, front + 0.1),
+      ], r, r * 0.86);
     });
-    const wristLocal = new THREE.Vector3(0.52, -1.72, -0.36);
+    const wristLocal = new THREE.Vector3(0.5, -PHONE.h / 2 - 0.48, -0.32);
 
     // ---------- the character ----------
     const person = new THREE.Group(); scene.add(person);
@@ -277,7 +283,7 @@ export function start(stage, canvas, onError) {
       arm.elbowBall.position.copy(elbow);
       arm.wristBall.position.copy(wristPoint);
     }
-    const rightArm = makeArm(0.3, 0.22, armShirt, skin);
+    const rightArm = makeArm(0.3, 0.165, armShirt, skin);
     const leftArm = makeArm(0.3, 0.22, shirt, bodySkin);
     const leftHand = mesh(new THREE.SphereGeometry(0.28, 16, 12), bodySkin);
     leftHand.scale.set(0.8, 1.1, 0.7); scene.add(leftHand);
