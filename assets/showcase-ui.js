@@ -1,5 +1,3 @@
-import { seedFor } from './showcase-state.js';
-
 // Editable illustration of MainView.swift, SongCard.swift and RichSongView.swift.
 // Demo content only. Layout, card faces and individual controls live here;
 // the same drawings power the 3D layers and the non-WebGL preview.
@@ -102,7 +100,7 @@ function symbol(ctx, name, x, y, color = BRAND.ink, size = 20) {
 // level distinguishes a card's surface, its content and its controls.
 export const layers = [];
 function add(id, x, y, w, h, depth, level, draw) {
-  layers.push({ id, x, y, w, h, depth, level, draw, seed: seedFor(id) });
+  layers.push({ id, x, y, w, h, depth, level, draw });
 }
 
 add('header', 16, 77, 358, 98, 0.2, 0, (ctx) => {
@@ -214,6 +212,20 @@ function songCard(id, y, mystery = false) {
 }
 songCard('song', 734);
 songCard('mystery', 1047, true);
+
+// Card groups lift together: a card's details stay square to it.
+const inside = (a, b) => a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+for (const layer of layers) {
+  // The card it sits on, otherwise its name family (e.g. the four group buttons)
+  const card = layers.find(other => other.level === 0 && inside(layer, other));
+  layer.group = card ? card.id : layer.id.split('-')[0];
+  layer.cardDepth = card ? card.depth : layer.depth;
+}
+for (const layer of layers) {
+  const members = layers.filter(other => other.group === layer.group);
+  layer.groupTop = Math.min(...members.map(m => m.y));
+  layer.groupBottom = Math.max(...members.map(m => m.y + m.h));
+}
 
 export function drawChrome(ctx) {
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, UI.width, UI.top); ctx.fillRect(0, UI.bottom, UI.width, UI.height - UI.bottom);

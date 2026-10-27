@@ -1,35 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sceneState, layerLift } from '../assets/showcase-state.js';
+import { sceneState, layerLift, layerAmount, layerOffset, SCROLL_MAX } from '../assets/showcase-state.js';
 import { UI, layers } from '../assets/showcase-ui.js';
 import { animateShowcase } from '../assets/showcase-motion.js';
 
-test('the UI is together at both ends and drifts apart twice, softly', () => {
-  assert.equal(sceneState(0).lift, 0);
-  assert.equal(sceneState(1).lift, 0);
-  const lifts = Array.from({ length: 1001 }, (_, i) => sceneState(i / 1000).lift);
-  const firstPeak = Math.max(...lifts.slice(50, 450));
-  const secondPeak = Math.max(...lifts.slice(550, 970));
-  const valley = Math.min(...lifts.slice(400, 650));
-  assert.ok(firstPeak > 0.8 && secondPeak > 0.8, 'both breaths open up');
-  assert.ok(valley < firstPeak - 0.3 && valley < secondPeak - 0.3, 'the layers gather in between');
-  for (let i = 1; i < lifts.length; i++) assert.ok(Math.abs(lifts[i] - lifts[i - 1]) < 0.02, 'no jumps');
+test('flat at both ends; each card lifts while it passes the focus line', () => {
   for (const layer of layers) {
-    assert.equal(layerLift(0, layer.level, layer.seed), 0);
-    assert.equal(layerLift(1, layer.level, layer.seed), 1);
-    assert.ok(layer.seed >= 0 && layer.seed < 1, layer.id);
+    assert.equal(layerAmount(layer, sceneState(0)), 0, layer.id);
+    assert.equal(layerAmount(layer, sceneState(1)), 0, layer.id);
+    assert.equal(layerLift(0, layer.level), 0);
+    assert.equal(layerLift(1, layer.level), 1);
   }
+  const groups = [...new Set(layers.map(layer => layer.group))];
+  const surface = group => layers.find(layer => layer.group === group && layer.level === 0) ?? layers.find(layer => layer.group === group);
+  const peak = {};
+  for (let i = 0; i <= 1000; i++) {
+    const state = sceneState(i / 1000);
+    const lifted = groups.filter(group => layerAmount(surface(group), state) > 0.5);
+    assert.ok(lifted.length <= 4, `too much at once: ${lifted}`);
+    for (const group of groups) peak[group] = Math.max(peak[group] ?? 0, layerAmount(surface(group), state));
+  }
+  for (const group of ['recap', 'composer-surface', 'song-surface', 'mystery-surface']) assert.ok(peak[group] > 0.75, `${group} lifts`);
 });
 
-test('the feed glides forward and stays inside its range', () => {
+test('the feed glides forward once and stays inside its range', () => {
   let previousScroll = 0;
   for (let i = 0; i <= 1000; i++) {
     const state = sceneState(i / 1000);
     assert.ok(state.lift >= 0 && state.lift <= 1);
-    assert.ok(state.scroll >= previousScroll && state.scroll <= 548);
+    assert.ok(state.scroll >= previousScroll && state.scroll <= SCROLL_MAX);
     previousScroll = state.scroll;
   }
-  assert.equal(previousScroll, 548);
+  assert.equal(previousScroll, SCROLL_MAX);
+});
+
+test('a card and its details lift in the same direction', () => {
+  for (let i = 0; i <= 100; i++) {
+    const state = sceneState(i / 100);
+    for (const layer of layers) {
+      const card = layers.find(other => other.group === layer.group && other.level === 0);
+      if (!card || card === layer) continue;
+      assert.ok(layerAmount(layer, state) <= layerAmount(card, state) + 1e-9, layer.id);
+      // never behind its card: flat stacking order (depth) plus lift
+      const z = l => l.depth * 0.003 + layerOffset(l, state) * 0.72;
+      assert.ok(z(layer) >= z(card), `${layer.id} sinks behind its card at ${i}%`);
+    }
+  }
 });
 
 test('reverse scroll is deterministic and overscroll is clamped', () => {

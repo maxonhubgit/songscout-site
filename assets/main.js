@@ -36,7 +36,7 @@ async function setup() {
     }
   }
   try {
-    const { start } = await import('./phone.js?v=3');
+    const { start } = await import('./phone.js?v=4');
     if (run !== generation) return;
     // A fresh canvas is needed when motion is re-enabled after context disposal.
     const oldCanvas = stage.querySelector('.scene-canvas');
