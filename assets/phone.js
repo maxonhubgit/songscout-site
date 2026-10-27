@@ -202,11 +202,14 @@ export function start(stage, canvas, onError) {
     // Palm: one smooth shape fully behind the phone (its front stays behind the back glass)
     const palmDepth = 0.2;
     blob(P(0.18, -0.78, -front - 0.03 - palmDepth), [0.82, 0.92, palmDepth]);
-    // Ball of the thumb beside the right edge, heel of the hand below the phone
-    blob(P(edge + 0.24, -1.22, -0.2), [0.22, 0.34, 0.22]);
-    blob(P(0.5, -PHONE.h / 2 - 0.26, -0.3), [0.36, 0.26, 0.24]);
-    // Thumb: up along the right edge, leaning in, its tip resting on the frame in the upper third
-    taperedTube([P(edge + 0.2, -1.0, -0.12), P(edge + 0.2, -0.42, 0.0), P(edge + 0.08, 0.18, 0.1), P(edge - 0.06, 0.52, 0.13)], 0.18, 0.125);
+    // Thumb: ball over the bottom-right corner, then two segments with a slight inward bend at
+    // the joint; both lie in front of the frame and the tip rests at the edge of the screen.
+    blob(P(edge + 0.05, -1.34, -0.04), [0.2, 0.28, 0.16]);
+    const thumbBase = P(edge + 0.08, -1.1, 0.04);
+    const thumbJoint = P(edge + 0.05, -0.6, front + 0.12);
+    const thumbTip = P(edge - 0.07, -0.2, front + 0.1);
+    taperedTube([thumbBase, thumbBase.clone().lerp(thumbJoint, 0.5).add(P(0.012, 0, 0.01)), thumbJoint], 0.135, 0.125, 32);
+    taperedTube([thumbJoint, thumbJoint.clone().lerp(thumbTip, 0.5).add(P(0.008, 0, 0.01)), thumbTip], 0.123, 0.104, 32);
     // Fingers: from the palm, around the left edge and out past it, close together, index on top
     [[0.06, 0.165, 0.0], [-0.26, 0.17, 0.02], [-0.57, 0.16, 0.05], [-0.86, 0.14, 0.1]].forEach(([y, r, inset]) => {
       taperedTube([
@@ -216,7 +219,9 @@ export function start(stage, canvas, onError) {
         P(-edge - 0.06 + inset, y + 0.05, front + 0.1),
       ], r, r * 0.86);
     });
-    const wristLocal = new THREE.Vector3(0.5, -PHONE.h / 2 - 0.48, -0.32);
+    const wristLocal = new THREE.Vector3(0.5, -PHONE.h / 2 - 0.5, -0.32);
+    // Palm to forearm in one tapering shape; it starts below the phone so it cannot break through
+    taperedTube([P(0.36, -PHONE.h / 2 + 0.08, -front - 0.26), P(0.44, -PHONE.h / 2 - 0.2, -0.33), wristLocal.clone()], 0.25, 0.33, 32);
 
     // ---------- the character ----------
     const person = new THREE.Group(); scene.add(person);
@@ -284,6 +289,7 @@ export function start(stage, canvas, onError) {
       arm.wristBall.position.copy(wristPoint);
     }
     const rightArm = makeArm(0.3, 0.165, armShirt, skin);
+    rightArm.wristBall.visible = false; // the hand's own wrist shape takes its place
     const leftArm = makeArm(0.3, 0.22, shirt, bodySkin);
     const leftHand = mesh(new THREE.SphereGeometry(0.28, 16, 12), bodySkin);
     leftHand.scale.set(0.8, 1.1, 0.7); scene.add(leftHand);
