@@ -202,14 +202,14 @@ export function start(stage, canvas, onError) {
     // Palm: one smooth shape fully behind the phone (its front stays behind the back glass)
     const palmDepth = 0.2;
     blob(P(0.18, -0.78, -front - 0.03 - palmDepth), [0.82, 0.92, palmDepth]);
-    // Thumb: ball over the bottom-right corner, then two segments with a slight inward bend at
-    // the joint; both lie in front of the frame and the tip rests at the edge of the screen.
-    blob(P(edge + 0.05, -1.34, -0.04), [0.2, 0.28, 0.16]);
-    const thumbBase = P(edge + 0.08, -1.1, 0.04);
-    const thumbJoint = P(edge + 0.05, -0.6, front + 0.12);
-    const thumbTip = P(edge - 0.07, -0.2, front + 0.1);
-    taperedTube([thumbBase, thumbBase.clone().lerp(thumbJoint, 0.5).add(P(0.012, 0, 0.01)), thumbJoint], 0.135, 0.125, 32);
-    taperedTube([thumbJoint, thumbJoint.clone().lerp(thumbTip, 0.5).add(P(0.008, 0, 0.01)), thumbTip], 0.123, 0.104, 32);
+    // Thumb and ball of the thumb as one continuous shape: wide beside the wrist, diagonally
+    // across the bottom-right corner onto the frame, tapering to the tip at the edge of the screen.
+    taperedTube([
+      P(edge + 0.36, -1.98, -0.24),
+      P(edge + 0.24, -1.38, -0.04),
+      P(edge + 0.08, -0.8, front + 0.1),
+      P(edge - 0.08, -0.32, front + 0.1),
+    ], 0.27, 0.11, 64);
     // Fingers: from the palm, around the left edge and out past it, close together, index on top
     [[0.06, 0.165, 0.0], [-0.26, 0.17, 0.02], [-0.57, 0.16, 0.05], [-0.86, 0.14, 0.1]].forEach(([y, r, inset]) => {
       taperedTube([
