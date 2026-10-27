@@ -1,7 +1,8 @@
 // Scroll choreography is separate from the artwork and the renderer.
-// The story: the back of a head with headphones, then the camera moves over the
+// The story: the back of a head with earphones, then the camera moves over the
 // shoulder while the phone is raised, then it closes in on the screen, where the
-// feed scrolls once and whatever passes the middle lifts out and sinks back.
+// feed scrolls once over a "ramp": layers float highest in the middle of the
+// screen and lower toward its top and bottom edges.
 export const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 export function smooth(start, end, value) {
   const t = clamp((value - start) / (end - start));
@@ -9,8 +10,9 @@ export function smooth(start, end, value) {
 }
 
 export const SCROLL_MAX = 640;
-export const FOCUS = 400;   // screen y (points) where content lifts, around the middle
-export const RANGE = 190;   // how far above/below the focus the lift fades out
+export const CENTER = 439;    // screen y (points) of the ramp's peak: middle of the visible area
+export const HALF = 470;      // distance from the peak to where the ramp would reach its base
+export const BASE = 0.18;     // height at the top and bottom edges, relative to the peak
 
 /** The phone screen on its own: progress 0..1 of the screen part */
 export function screenState(progress) {
@@ -45,28 +47,30 @@ export function sceneState(progress) {
   };
 }
 
-/** 0..1 for a span of content [top, bottom] (content points) at the current scroll */
-export function focusLift(top, bottom, scroll) {
-  const a = top - scroll, b = bottom - scroll;
-  const distance = Math.max(0, a - FOCUS, FOCUS - b);
-  return distance >= RANGE ? 0 : 0.5 * (1 + Math.cos((Math.PI * distance) / RANGE));
+/** Ramp height (0..1) at a screen y: a smooth hill, highest in the middle */
+export function ramp(screenY) {
+  const t = clamp(Math.abs(screenY - CENTER) / HALF);
+  return BASE + (1 - BASE) * 0.5 * (1 + Math.cos(Math.PI * t));
 }
 
 export function layerLift(lift, order) {
-  // Details follow their card a moment later, in the same direction.
+  // Details sit a step above their card; the step grows with the lift.
   return smooth(Math.min(order, 4) * 0.05, 1, lift);
 }
 
-/** How far a layer is lifted: its whole card group lifts together */
+/** How high a layer floats, 0..1: the ramp at its centre, scaled by the envelope */
 export function layerAmount(layer, state) {
-  const group = state.envelope * focusLift(layer.groupTop, layer.groupBottom, state.scroll);
-  return layerLift(group, layer.level);
+  const own = ramp(layer.y + layer.h / 2 - state.scroll);
+  return state.envelope * own;
 }
 
-/** Lift in depth units. Details ride on their card and add their own lift on top,
- *  so they can never sink behind it while it moves. */
+/** Lift in depth units. Cards follow the ramp; details ride on their card and add their own step,
+ *  so they can never sink behind it. */
 export function layerOffset(layer, state) {
-  const group = state.envelope * focusLift(layer.groupTop, layer.groupBottom, state.scroll);
-  const card = layer.cardDepth ?? layer.depth;
-  return group * card + layerLift(group, layer.level) * Math.max(0, layer.depth - card);
+  const cardDepth = layer.cardDepth ?? layer.depth;
+  const card = layer.card ?? layer;
+  const cardHeight = state.envelope * ramp(card.y + card.h / 2 - state.scroll);
+  const own = state.envelope * ramp(layer.y + layer.h / 2 - state.scroll);
+  const base = Math.max(cardHeight, own) * cardDepth * 1.6;
+  return base + layerLift(Math.max(cardHeight, own), layer.level) * Math.max(0, layer.depth - cardDepth);
 }

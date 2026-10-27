@@ -1,26 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sceneState as storyState, screenState as sceneState, layerLift, layerAmount, layerOffset, SCROLL_MAX, STORY } from '../assets/showcase-state.js';
+import { sceneState as storyState, screenState as sceneState, layerLift, layerAmount, layerOffset, ramp, CENTER, SCROLL_MAX, STORY } from '../assets/showcase-state.js';
 import { UI, layers } from '../assets/showcase-ui.js';
 import { animateShowcase } from '../assets/showcase-motion.js';
 
-test('flat at both ends; each card lifts while it passes the focus line', () => {
+test('the ramp: highest in the middle of the screen, lower toward top and bottom', () => {
+  assert.equal(ramp(CENTER), 1);
+  for (let y = 0; y < CENTER; y += 10) {
+    assert.ok(ramp(y) <= ramp(y + 10) + 1e-12, `rises toward the middle at ${y}`);
+    assert.ok(Math.abs(ramp(CENTER - (CENTER - y)) - ramp(CENTER + (CENTER - y))) < 1e-9, 'symmetric');
+  }
+  assert.ok(ramp(UI.top) < 0.5 && ramp(UI.bottom) < 0.5, 'edges sit clearly lower');
+  assert.ok(ramp(UI.top) > 0, 'edges still float a little');
   for (const layer of layers) {
-    assert.equal(layerAmount(layer, sceneState(0)), 0, layer.id);
-    assert.equal(layerAmount(layer, sceneState(1)), 0, layer.id);
+    assert.equal(layerOffset(layer, sceneState(0)), 0, layer.id);
+    assert.equal(layerOffset(layer, sceneState(1)), 0, layer.id);
     assert.equal(layerLift(0, layer.level), 0);
     assert.equal(layerLift(1, layer.level), 1);
   }
-  const groups = [...new Set(layers.map(layer => layer.group))];
-  const surface = group => layers.find(layer => layer.group === group && layer.level === 0) ?? layers.find(layer => layer.group === group);
-  const peak = {};
-  for (let i = 0; i <= 1000; i++) {
-    const state = sceneState(i / 1000);
-    const lifted = groups.filter(group => layerAmount(surface(group), state) > 0.5);
-    assert.ok(lifted.length <= 4, `too much at once: ${lifted}`);
-    for (const group of groups) peak[group] = Math.max(peak[group] ?? 0, layerAmount(surface(group), state));
-  }
-  for (const group of ['recap', 'composer-surface', 'song-surface', 'mystery-surface']) assert.ok(peak[group] > 0.75, `${group} lifts`);
 });
 
 test('the feed glides forward once and stays inside its range', () => {
@@ -34,13 +31,12 @@ test('the feed glides forward once and stays inside its range', () => {
   assert.equal(previousScroll, SCROLL_MAX);
 });
 
-test('a card and its details lift in the same direction', () => {
+test('details never sink behind their card', () => {
   for (let i = 0; i <= 100; i++) {
     const state = sceneState(i / 100);
     for (const layer of layers) {
       const card = layers.find(other => other.group === layer.group && other.level === 0);
       if (!card || card === layer) continue;
-      assert.ok(layerAmount(layer, state) <= layerAmount(card, state) + 1e-9, layer.id);
       // never behind its card: flat stacking order (depth) plus lift
       const z = l => l.depth * 0.003 + layerOffset(l, state) * 0.72;
       assert.ok(z(layer) >= z(card), `${layer.id} sinks behind its card at ${i}%`);

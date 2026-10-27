@@ -9,7 +9,7 @@ async function setup() {
   current?.dispose(); current = null;
   stage.classList.remove('is-animated', 'is-ready', 'is-native');
   drawPreview(stage.querySelector('.phone-preview canvas'));
-  stage.querySelector('[data-scene-title]').textContent = 'Headphones on.';
+  stage.querySelector('[data-scene-title]').textContent = 'Earphones in.';
   stage.querySelector('[data-scene-description]').textContent = 'Your friends are already sharing.';
   // Reduced-motion users retain the full preview without a long empty scroll.
   if (calm.matches) return;
@@ -36,7 +36,7 @@ async function setup() {
     }
   }
   try {
-    const { start } = await import('./phone.js?v=6');
+    const { start } = await import('./phone.js?v=7');
     if (run !== generation) return;
     // A fresh canvas is needed when motion is re-enabled after context disposal.
     const oldCanvas = stage.querySelector('.scene-canvas');

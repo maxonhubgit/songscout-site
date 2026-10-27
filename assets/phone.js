@@ -1,4 +1,4 @@
-// The showcase scene: a character with headphones holds the phone; the camera
+// The showcase scene: a character with wired earphones holds the phone; the camera
 // starts behind the head, moves over the shoulder and closes in on the screen,
 // where the app layers lift out. Everything is built here from basic shapes.
 import * as THREE from './vendor/three.module.min.js';
@@ -204,24 +204,49 @@ export function start(stage, canvas, onError) {
     hair.scale.set(0.98, 1.07, 1.03); hair.rotation.x = 0.35; hair.position.set(0, 0.04, 0.03); headGroup.add(hair);
     [-1, 1].forEach(side => {
       const ear = mesh(new THREE.SphereGeometry(0.2, 16, 12), skin);
-      ear.scale.set(0.5, 1, 0.8); ear.position.set(side * 0.92, -0.05, 0.02); headGroup.add(ear);
+      ear.scale.set(0.45, 1, 0.75); ear.position.set(side * 0.96, -0.05, -0.02); headGroup.add(ear);
     });
-    // Headphones: band over the head, cups with an ember ring
-    const ink = clay(COLORS.ink, 0.35);
-    const band = mesh(new THREE.TorusGeometry(1.1, 0.085, 14, 64, Math.PI), ink);
-    band.position.y = 0.06; headGroup.add(band);
-    const bandPad = mesh(new THREE.TorusGeometry(1.03, 0.06, 10, 48, Math.PI * 0.5), clay(COLORS.cushion, 0.9));
-    bandPad.rotation.z = Math.PI * 0.25; bandPad.position.y = 0.06; headGroup.add(bandPad);
+    // In-ear wired earphones: white buds with stems; cables run down the neck to a
+    // splitter and on to the phone, recomputed every frame so they follow it.
+    const budMaterial = new THREE.MeshStandardMaterial({ color: 0xf8f8f6, roughness: 0.22, metalness: 0 });
+    materials.add(budMaterial);
+    const cableMaterial = clay(0xe2e2e5, 0.35);
+    const stemTips = [];
     [-1, 1].forEach(side => {
-      const cup = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 32), ink);
-      cup.rotation.z = Math.PI / 2; cup.position.set(side * 1.1, -0.06, 0.02); headGroup.add(cup);
-      const cushion = mesh(new THREE.TorusGeometry(0.33, 0.1, 12, 28), clay(COLORS.cushion, 0.9));
-      cushion.rotation.y = Math.PI / 2; cushion.position.set(side * 0.94, -0.06, 0.02); headGroup.add(cushion);
-      const ring = mesh(new THREE.TorusGeometry(0.36, 0.035, 10, 32), clay(COLORS.ember, 0.4));
-      ring.rotation.y = Math.PI / 2; ring.position.set(side * 1.26, -0.06, 0.02); headGroup.add(ring);
-      const yoke = mesh(new THREE.BoxGeometry(0.08, 0.26, 0.16), ink);
-      yoke.position.set(side * 1.1, 0.24, 0.02); headGroup.add(yoke);
+      const bud = mesh(new THREE.SphereGeometry(0.155, 24, 18), budMaterial);
+      bud.scale.set(0.85, 1, 1.05); bud.position.set(side * 1.02, -0.05, -0.1); headGroup.add(bud);
+      const stem = mesh(new THREE.CapsuleGeometry(0.048, 0.34, 6, 14), budMaterial);
+      stem.rotation.x = -0.22; stem.position.set(side * 1.0, -0.3, -0.15); headGroup.add(stem);
+      const band = mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.035, 16), clay(COLORS.ember, 0.4));
+      band.rotation.x = -0.22; band.position.set(side * 1.0, -0.47, -0.19); headGroup.add(band);
+      const tip = new THREE.Object3D(); tip.position.set(side * 1.0, -0.53, -0.2); headGroup.add(tip);
+      stemTips.push(tip);
     });
+    const CABLE_RADIUS = 0.026;
+    function makeCable(points, segments) {
+      const curve = new THREE.CatmullRomCurve3(points.map(() => new THREE.Vector3()), false, 'centripetal');
+      const cable = mesh(new THREE.TubeGeometry(curve, segments, CABLE_RADIUS, 6, false), cableMaterial);
+      cable.frustumCulled = false; scene.add(cable);
+      return { cable, curve, segments };
+    }
+    function updateCable(c, points) {
+      c.curve.points.forEach((point, i) => point.copy(points[i]));
+      c.curve.needsUpdate = true; // the curve caches its length; recompute it for the new points
+      const fresh = new THREE.TubeGeometry(c.curve, c.segments, CABLE_RADIUS, 6, false);
+      const geometry = c.cable.geometry;
+      geometry.attributes.position.array.set(fresh.attributes.position.array);
+      geometry.attributes.normal.array.set(fresh.attributes.normal.array);
+      geometry.attributes.position.needsUpdate = true;
+      geometry.attributes.normal.needsUpdate = true;
+      fresh.dispose();
+    }
+    const v = () => new THREE.Vector3();
+    const earCables = [makeCable([v(), v(), v(), v()], 40), makeCable([v(), v(), v(), v()], 40)];
+    const mainCable = makeCable([v(), v(), v(), v(), v()], 70);
+    // Splitter just below the collar, in front of the chest (person space)
+    const SPLITTER = new THREE.Vector3(0, 4.45, -1.02);
+    const splitter = mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 14), budMaterial);
+    scene.add(splitter);
 
     // Arms: sleeves (shirt) from the shoulder, skin from the elbow; joints are spheres
     function makeArm(upperRadius, lowerRadius) {
@@ -284,6 +309,7 @@ export function start(stage, canvas, onError) {
     const wrist = new THREE.Vector3(), shoulderPoint = new THREE.Vector3(), close = new THREE.Vector3();
     const rightPole = new THREE.Vector3(0.6, -1, 0.5), leftPole = new THREE.Vector3(-0.4, -0.2, 1);
     const leftWrist = new THREE.Vector3(), wide = new THREE.Vector3(), wide2 = new THREE.Vector3();
+    const cableA = new THREE.Vector3(), cableB = new THREE.Vector3(), cableC = new THREE.Vector3(), cableD = new THREE.Vector3(), cableE = new THREE.Vector3();
 
     const render = (state, motion) => {
       const { time, lean, pointer, life } = motion;
@@ -314,6 +340,31 @@ export function start(stage, canvas, onError) {
       poseArm(leftArm, shoulderPoint.copy(SHOULDER_L).applyMatrix4(person.matrixWorld), leftWrist, leftPole);
       leftHand.position.copy(leftWrist).y -= 0.22;
 
+      // Earphone cables: ears → down the neck → splitter → sagging to the phone's bottom
+      headGroup.updateMatrixWorld(true);
+      const split = cableA.copy(SPLITTER).applyMatrix4(person.matrixWorld);
+      splitter.position.copy(split);
+      stemTips.forEach((tip, i) => {
+        const side = i === 0 ? -1 : 1;
+        const start = cableB.setFromMatrixPosition(tip.matrixWorld);
+        updateCable(earCables[i], [
+          start,
+          cableC.set(side * 0.6, 4.98, -0.22).applyMatrix4(person.matrixWorld),
+          cableD.set(side * 0.34, 4.62, -0.98).applyMatrix4(person.matrixWorld),
+          split.clone().add(cableE.set(0, 0.06, 0)),
+        ]);
+      });
+      const plug = cableB.set(0, -PHONE.h / 2 - 0.06, 0).applyMatrix4(phone.matrixWorld).clone();
+      phoneUp.set(0, 1, 0).applyQuaternion(holder.quaternion).normalize();
+      const sag = split.clone().lerp(plug, 0.5); sag.y -= 0.85; sag.z -= 0.15;
+      updateCable(mainCable, [
+        split.clone().add(cableE.set(0, -0.06, 0)),
+        split.clone().add(cableE.set(0.05, -0.45, -0.08)),
+        sag,
+        plug.clone().addScaledVector(phoneUp, -0.38),
+        plug,
+      ]);
+
       // Camera: behind the head → over the shoulder → in front of the screen, at an angle
       center.setFromMatrixPosition(phone.matrixWorld);
       phoneNormal.set(0, 0, 1).applyQuaternion(holder.quaternion).normalize();
@@ -324,9 +375,9 @@ export function start(stage, canvas, onError) {
       const distance = Math.max(fit, fitWide) * (compact ? 1.25 : 1.12);
       // Close-up: from above the right shoulder toward the screen, near enough to fill the frame
       close.copy(OVER_SHOULDER_EYE).sub(center).normalize().multiplyScalar(distance).add(center);
-      close.x = Math.max(close.x, 1.95); // never into the head or the headphones
+      close.x = Math.max(close.x, 1.95); // never into the head
       const turn = ease(state.turn), zoom = ease(state.zoom);
-      // Tall screens see less to the sides: step back so the head and headphones fit
+      // Tall screens see less to the sides: step back so head and shoulders fit
       const narrow = Math.max(1, 0.95 / camera.aspect);
       wide.copy(behindHead).sub(behindLook).multiplyScalar(narrow).add(behindLook);
       wide2.copy(overShoulder).sub(shoulderLook).multiplyScalar(Math.sqrt(narrow)).add(shoulderLook);

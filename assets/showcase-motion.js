@@ -1,7 +1,7 @@
 import { clamp, sceneState } from './showcase-state.js';
 
 const chapters = [
-  ['Headphones on.', 'Your friends are already sharing.'],
+  ['Earphones in.', 'Your friends are already sharing.'],
   ['Your people, in your pocket.', 'Small private groups for the songs you love.'],
   ['Every pick has a story.', 'Play it, react to it, keep it.'],
   ['Ready to listen.', 'Keep discovering, together.'],

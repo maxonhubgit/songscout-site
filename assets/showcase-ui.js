@@ -220,6 +220,7 @@ for (const layer of layers) {
   const card = layers.find(other => other.level === 0 && inside(layer, other));
   layer.group = card ? card.id : layer.id.split('-')[0];
   layer.cardDepth = card ? card.depth : layer.depth;
+  layer.card = card ?? layer;
 }
 for (const layer of layers) {
   const members = layers.filter(other => other.group === layer.group);
