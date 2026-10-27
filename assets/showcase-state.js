@@ -23,6 +23,9 @@ export function screenState(progress) {
     envelope,
     lift: envelope,
     scroll: SCROLL_MAX * smooth(0.04, 0.96, p),
+    // The content y the side panel explains: starts near the top of the screen so the
+    // header and recap get their turn, then glides to the middle
+    reading: SCROLL_MAX * smooth(0.04, 0.96, p) + 120 + (CENTER - 120) * smooth(0, 0.4, p),
   };
 }
 
@@ -36,6 +39,9 @@ export const STORY = {
 
 export function sceneState(progress) {
   const p = clamp(progress);
+  // Side panel: the intro shows at the very top, the explanations once the camera has locked on
+  const intro = 1 - smooth(0, 0.035, p);
+  const explain = smooth(STORY.zoom[1] - 0.025, STORY.zoom[1] + 0.01, p);
   const screen = screenState((p - STORY.screen[0]) / (STORY.screen[1] - STORY.screen[0]));
   return {
     progress: p,
@@ -43,7 +49,9 @@ export function sceneState(progress) {
     turn: smooth(...STORY.turn, p),
     zoom: smooth(...STORY.zoom, p),
     screen,
-    chapter: p < 0.14 ? 0 : p < 0.42 ? 1 : p < 0.8 ? 2 : 3,
+    intro,
+    explain,
+    panel: intro > 0.5 ? 'intro' : explain > 0.5 ? 'explain' : 'hidden',
   };
 }
 

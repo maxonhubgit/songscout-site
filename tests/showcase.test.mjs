@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sceneState as storyState, screenState as sceneState, layerLift, layerAmount, layerOffset, ramp, CENTER, SCROLL_MAX, STORY } from '../assets/showcase-state.js';
-import { UI, layers } from '../assets/showcase-ui.js';
+import { UI, layers, explanations, explanationAt } from '../assets/showcase-ui.js';
 import { animateShowcase } from '../assets/showcase-motion.js';
 
 test('the ramp: highest in the middle of the screen, lower toward top and bottom', () => {
@@ -56,9 +56,25 @@ test('the story: head first, then over the shoulder, then the screen', () => {
     const state = storyState(i / 100);
     if (state.zoom < 0.5) assert.equal(state.screen.lift, 0, `cards stay flat before the close-up (${i}%)`);
   }
-  let chapter = 0;
-  for (let i = 0; i <= 100; i++) { const c = storyState(i / 100).chapter; assert.ok(c >= chapter); chapter = c; }
-  assert.equal(chapter, 3);
+});
+
+test('side panel: intro first, hidden while the camera moves, explanations once it has locked on', () => {
+  assert.equal(storyState(0).panel, 'intro');
+  for (let i = 0; i <= 200; i++) {
+    const state = storyState(i / 200);
+    if (state.zoom < 0.95) assert.notEqual(state.panel, 'explain', `explains too early at ${i / 2}%`);
+    if (state.progress > 0.06 && state.zoom < 0.9) assert.equal(state.panel, 'hidden', `panel visible during the flight at ${i / 2}%`);
+  }
+  assert.equal(storyState(1).panel, 'explain');
+  const seen = [];
+  for (let i = 0; i <= 400; i++) {
+    const state = storyState(i / 400);
+    if (state.panel !== 'explain') continue;
+    const topic = explanationAt(state.screen.reading);
+    assert.ok(explanations[topic], topic);
+    if (seen.at(-1) !== topic) seen.push(topic);
+  }
+  assert.deepEqual(seen, Object.keys(explanations), 'every part is explained once, top to bottom');
 });
 
 test('reverse scroll is deterministic and overscroll is clamped', () => {
@@ -106,8 +122,8 @@ test('idle float rests after a while, pauses offscreen, resumes on scroll, and r
   globalThis.ResizeObserver = class { observe() {} disconnect() {} };
   const nodes = {
     '.scene-viewport': {}, '.sticky': { clientHeight: 1000 },
-    '[data-scene-title]': {}, '[data-scene-description]': {},
-    '.scene-progress span': { style: {} },
+    '[data-explain-title]': {}, '[data-explain-text]': {}, '[data-explain-body]': null,
+    '.panel-progress span': { style: {} },
   };
   const stage = { dataset: {}, querySelector: key => nodes[key], getBoundingClientRect: () => ({ top, height: 4800 }) };
   let last, renders = 0, time = 0, stop;

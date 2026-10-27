@@ -10,34 +10,34 @@
   <title>SongScout</title>
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/styles.css?v=5">
+  <link rel="stylesheet" href="assets/styles.css?v=6">
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <img class="app-icon" src="assets/icon-512.png" alt="SongScout app icon" width="104" height="104">
-      <h1>SongScout</h1>
-      <p>Share the songs you love with your friends.</p>
-      <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-      <span class="pill">Coming soon to the App Store</span>
-      <a class="scroll-hint" href="#showcase">Take a closer look <span aria-hidden="true">↓</span></a>
-    </section>
-  </main>
-  <section class="scrolly" id="showcase" aria-label="Inside SongScout">
+  <section class="scrolly" id="showcase" data-panel="intro" aria-label="SongScout">
     <div class="sticky">
-      <div class="scene-heading">
-        <p class="eyebrow">Inside SongScout</p>
-        <h2 data-scene-title>Earphones in.</h2>
-      </div>
-      <div class="scene-viewport" role="img" aria-label="Illustration: a person with wired earphones holds a phone with SongScout. The view moves over their shoulder to the screen, where the feed scrolls and cards lift out as they pass.">
+      <div class="scene-viewport" role="img" aria-label="Illustration: a person with headphones holds a phone with SongScout. The view moves over their shoulder to the screen, where the feed scrolls and cards lift out as they pass the middle.">
         <div class="phone-preview" aria-hidden="true"><canvas></canvas></div>
         <canvas class="scene-canvas" aria-hidden="true"></canvas>
       </div>
-      <div class="scene-caption">
-        <p data-scene-description>Your friends are already sharing.</p>
-        <div class="scene-progress" aria-hidden="true"><span></span></div>
-        <span class="scene-note">App preview · Sample content<span class="motion-hint"> · Scroll to explore</span></span>
-      </div>
+      <aside class="panel">
+        <div class="panel-intro">
+          <img class="app-icon" src="assets/icon-512.png" alt="SongScout app icon" width="72" height="72">
+          <h1>SongScout</h1>
+          <p>Share the songs you love with your friends.</p>
+          <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+          <span class="pill">Coming soon to the App Store</span>
+          <span class="scroll-hint motion-hint">Scroll to look closer <span aria-hidden="true">↓</span></span>
+        </div>
+        <div class="panel-explain" aria-live="polite">
+          <p class="eyebrow">Inside SongScout</p>
+          <div class="panel-body" data-explain-body>
+            <h2 data-explain-title>Your group, at a glance</h2>
+            <p data-explain-text>Every group is private. Its name, who is in it, and all your other groups are one tap away.</p>
+          </div>
+          <div class="panel-progress" aria-hidden="true"><span></span></div>
+          <span class="panel-note">App preview · Sample content</span>
+        </div>
+      </aside>
     </div>
     <noscript><p class="wrap">Enable JavaScript to explore the app preview.</p></noscript>
   </section>
@@ -52,6 +52,6 @@
       </nav>
     </div>
   </footer>
-  <script type="module" src="assets/main.js?v=7"></script>
+  <script type="module" src="assets/main.js?v=8"></script>
 </body>
 </html>

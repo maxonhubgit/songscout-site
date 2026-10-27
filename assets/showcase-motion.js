@@ -1,11 +1,17 @@
 import { clamp, sceneState } from './showcase-state.js';
+import { explanations, explanationAt } from './showcase-ui.js';
 
-const chapters = [
-  ['Earphones in.', 'Your friends are already sharing.'],
-  ['Your people, in your pocket.', 'Small private groups for the songs you love.'],
-  ['Every pick has a story.', 'Play it, react to it, keep it.'],
-  ['Ready to listen.', 'Keep discovering, together.'],
-];
+
+/** How far to move the scene so it is centred in the space next to (or above) the panel */
+export function panelShift(stage) {
+  const panel = stage.querySelector('.panel');
+  const sticky = stage.querySelector('.sticky');
+  if (!panel || !sticky || !panel.offsetWidth) return { x: 0, y: 0 };
+  const beside = panel.offsetLeft + panel.offsetWidth < sticky.clientWidth * 0.6;
+  return beside
+    ? { x: (panel.offsetLeft + panel.offsetWidth) / 2, y: 0 }
+    : { x: 0, y: (sticky.clientHeight - panel.offsetTop) / 2 };
+}
 
 // Idle floating runs this long after the last scroll or pointer movement, then rests.
 const IDLE_MS = 20000;
@@ -17,23 +23,32 @@ export function animateShowcase(stage, render, resize, onError) {
   const viewport = stage.querySelector('.scene-viewport');
   const sticky = stage.querySelector('.sticky');
   let target = 0, progress = 0, raf = 0, previous = 0, clock = 0, lastInput = 0;
-  let visible = true, disposed = false, chapter = -1;
+  let visible = true, disposed = false, topic = '', panel = '';
   let lean = 0, leanSpeed = 0, life = 1;
   const pointer = { x: 0, y: 0 }, pointerTarget = { x: 0, y: 0 };
-  const title = stage.querySelector('[data-scene-title]');
-  const description = stage.querySelector('[data-scene-description]');
-  const meter = stage.querySelector('.scene-progress span');
+  const title = stage.querySelector('[data-explain-title]');
+  const description = stage.querySelector('[data-explain-text]');
+  const body = stage.querySelector('[data-explain-body]');
+  const meter = stage.querySelector('.panel-progress span');
 
   function paint() {
     const state = sceneState(progress);
     render(state, { time: clock / 1000, lean, pointer, life });
-    if (state.chapter !== chapter) {
-      chapter = state.chapter;
-      title.textContent = chapters[chapter][0];
-      description.textContent = chapters[chapter][1];
+    if (state.panel !== panel) {
+      panel = state.panel;
+      stage.dataset.panel = panel;
     }
-    meter.style.transform = `scaleX(${state.progress})`;
-    stage.dataset.chapter = String(chapter);
+    if (panel === 'explain') {
+      const next = explanationAt(state.screen.reading);
+      if (next !== topic) {
+        topic = next;
+        title.textContent = explanations[topic][0];
+        description.textContent = explanations[topic][1];
+        // Restart the soft fade-in for the new text
+        if (body?.classList) { body.classList.remove('is-new'); void body.offsetWidth; body.classList.add('is-new'); }
+      }
+    }
+    meter.style.transform = `scaleX(${state.screen.progress})`;
   }
   function frame(now) {
     raf = 0;

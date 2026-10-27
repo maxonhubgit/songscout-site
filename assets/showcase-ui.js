@@ -253,3 +253,30 @@ export function drawPreview(canvas, scroll = 0) {
   ctx.restore(); drawChrome(ctx);
   return true;
 }
+
+// What the side panel says while each part of the screen passes the middle.
+export const explanations = {
+  'header': ['Your group, at a glance', 'Every group is private. Its name, who is in it, and all your other groups are one tap away.'],
+  'group': ['Stats, invites, members', 'See what your group listens to, invite friends with a code or QR, and choose what you get notified about.'],
+  'recap': ['Your week in review', 'Every Sunday: the pick of the week, the top scout and the sound of your group.'],
+  'composer-surface': ['Share a song', 'Paste a Spotify, Apple Music or SoundCloud link, or tap “What’s playing?” to recognize the song around you. Turn on Mystery pick and your group guesses who shared it.'],
+  'feed-title': ['Latest picks', 'Everything your group shares, newest first.'],
+  'song-surface': ['Play it, react to it', 'Hear a 30-second preview, open the song in your own music app, react, and mark it as new to you.'],
+  'mystery-surface': ['Mystery picks', 'Who shared this one? Everyone gets one guess, and the sharer is revealed after 24 hours.'],
+};
+
+const groupSpans = Object.keys(explanations).map(group => {
+  const members = layers.filter(layer => layer.group === group);
+  return { group, top: Math.min(...members.map(m => m.y)), bottom: Math.max(...members.map(m => m.y + m.h)) };
+});
+
+/** The part of the screen at a content y (points): the one containing it, else the nearest */
+export function explanationAt(contentY) {
+  let best = groupSpans[0], bestDistance = Infinity;
+  for (const span of groupSpans) {
+    const distance = contentY < span.top ? span.top - contentY : contentY > span.bottom ? contentY - span.bottom : 0;
+    const tighter = distance === bestDistance && span.bottom - span.top < best.bottom - best.top;
+    if (distance < bestDistance || tighter) { best = span; bestDistance = distance; }
+  }
+  return best.group;
+}

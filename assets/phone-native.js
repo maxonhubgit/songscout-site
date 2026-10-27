@@ -1,6 +1,7 @@
 // Browser-native 3D fallback: the same individual UI layers, without WebGL.
 import { UI, layers, drawChrome } from './showcase-ui.js';
-import { clamp, layerOffset, screenState } from './showcase-state.js';
+import { clamp, layerOffset } from './showcase-state.js';
+import { panelShift } from './showcase-motion.js';
 import { animateShowcase } from './showcase-motion.js';
 
 export function start(stage, onError) {
@@ -43,8 +44,10 @@ export function start(stage, onError) {
     scale = Math.max(0.1, scale);
   };
   const render = (story, motion) => {
-    // No character without WebGL: the phone alone plays the screen part over the whole scroll
-    const state = screenState(story.progress);
+    // No character without WebGL: the phone alone, moved aside while the panel explains
+    const state = story.screen;
+    const shift = panelShift(stage);
+    rig.style.transform = `translate(${shift.x * story.explain}px, ${-shift.y * story.explain}px)`;
     const { time, lean, pointer, life } = motion;
     const lift = state.lift;
     const n1 = Math.sin(time * 0.5) + 0.4 * Math.sin(time * 1.1 + 1.3);
