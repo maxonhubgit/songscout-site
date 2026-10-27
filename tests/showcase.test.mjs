@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sceneState, layerLift, layerAmount, layerOffset, SCROLL_MAX } from '../assets/showcase-state.js';
+import { sceneState as storyState, screenState as sceneState, layerLift, layerAmount, layerOffset, SCROLL_MAX, STORY } from '../assets/showcase-state.js';
 import { UI, layers } from '../assets/showcase-ui.js';
 import { animateShowcase } from '../assets/showcase-motion.js';
 
@@ -46,6 +46,23 @@ test('a card and its details lift in the same direction', () => {
       assert.ok(z(layer) >= z(card), `${layer.id} sinks behind its card at ${i}%`);
     }
   }
+});
+
+test('the story: head first, then over the shoulder, then the screen', () => {
+  const start = storyState(0), end = storyState(1);
+  assert.equal(start.turn, 0); assert.equal(start.raise, 0); assert.equal(start.zoom, 0);
+  assert.equal(start.screen.progress, 0);
+  assert.equal(end.turn, 1); assert.equal(end.raise, 1); assert.equal(end.zoom, 1);
+  assert.equal(end.screen.lift, 0, 'cards are flat at the end');
+  // the screen only starts once the camera has closed in
+  assert.ok(STORY.screen[0] >= STORY.zoom[0] + 0.1);
+  for (let i = 0; i <= 100; i++) {
+    const state = storyState(i / 100);
+    if (state.zoom < 0.5) assert.equal(state.screen.lift, 0, `cards stay flat before the close-up (${i}%)`);
+  }
+  let chapter = 0;
+  for (let i = 0; i <= 100; i++) { const c = storyState(i / 100).chapter; assert.ok(c >= chapter); chapter = c; }
+  assert.equal(chapter, 3);
 });
 
 test('reverse scroll is deterministic and overscroll is clamped', () => {
@@ -109,7 +126,7 @@ test('idle float rests after a while, pauses offscreen, resumes on scroll, and r
     stop = animateShowcase(stage, (state, motion) => { assert.ok(Number.isFinite(motion.time) && Math.abs(motion.lean) <= 1); last = state; renders++; }, () => {}, error => { throw error; });
     settle();
     top = -3800; window.listeners.get('scroll')(); settle();
-    assert.equal(last.progress, 1); assert.equal(last.lift, 0);
+    assert.equal(last.progress, 1); assert.equal(last.screen.lift, 0);
     top = 0; window.listeners.get('scroll')(); settle();
     assert.equal(last.progress, 0);
     const before = renders;
@@ -117,7 +134,7 @@ test('idle float rests after a while, pauses offscreen, resumes on scroll, and r
     top = -1000; window.listeners.get('scroll')(); settle();
     assert.equal(renders, before);
     intersection([{ isIntersecting: true }]); settle();
-    assert.ok(last.lift > 0.8);
+    assert.ok(last.turn > 0.5, 'camera is over the shoulder');
     document.hidden = true; document.listeners.get('visibilitychange')();
     top = -3800; window.listeners.get('scroll')(); settle();
     assert.ok(last.progress < 1);

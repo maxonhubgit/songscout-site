@@ -91,7 +91,7 @@ tr:last-child td { border-bottom: 0; }
 .scroll-hint { display: inline-flex; align-items: center; gap: 10px; margin-top: 34px; padding: 8px; font-size: 13px; color: var(--muted); text-decoration: none; }
 .scroll-hint span { display: inline-block; font-size: 19px; }
 .scrolly { position: relative; scroll-margin-top: 0; }
-.scrolly.is-animated { height: 480vh; height: 480svh; }
+.scrolly.is-animated { height: 700vh; height: 700svh; }
 .scrolly .sticky {
   position: -webkit-sticky; position: sticky; top: 0;
   height: 100vh; height: 100svh;
@@ -134,7 +134,7 @@ tr:last-child td { border-bottom: 0; }
 .native-chrome { transform: translateZ(0.8px); }
 .native-layer { position: absolute; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 @media (max-width: 600px) {
-  .scrolly.is-animated { height: 420vh; height: 420svh; }
+  .scrolly.is-animated { height: 620vh; height: 620svh; }
   .scene-caption p { font-size: 12px; max-width: 32ch; margin: 0 auto; }
   .scene-heading { padding-top: 18px; }
 }

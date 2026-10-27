@@ -1,9 +1,10 @@
 import { clamp, sceneState } from './showcase-state.js';
 
 const chapters = [
-  ['Music, shared with your people.', 'Small private groups for the songs you love.'],
+  ['Headphones on.', 'Your friends are already sharing.'],
+  ['Your people, in your pocket.', 'Small private groups for the songs you love.'],
   ['Every pick has a story.', 'Play it, react to it, keep it.'],
-  ['Back together. Ready to listen.', 'Keep discovering, together.'],
+  ['Ready to listen.', 'Keep discovering, together.'],
 ];
 
 // Idle floating runs this long after the last scroll or pointer movement, then rests.
