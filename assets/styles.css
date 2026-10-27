@@ -1,0 +1,87 @@
+/* SongScout website: system fonts only, no external requests. */
+:root {
+  --ink: #0b0b0f;
+  --canvas: #f7f7f5;
+  --card: #ffffff;
+  --muted: #6e6e73;
+  --line: #e6e6e3;
+  --ember: #ff5a36;
+  --radius: 20px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { color: var(--ember); }
+a:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.site-header { padding: 22px 0; }
+.site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.2px; text-decoration: none; }
+.brand img { width: 30px; height: 30px; border-radius: 8px; }
+.site-header nav { display: flex; gap: 18px; font-size: 15px; color: var(--muted); }
+.site-header nav a { text-decoration: none; }
+
+/* Home */
+.hero { min-height: calc(100svh - 160px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 0 64px; }
+.hero .app-icon { width: 104px; height: 104px; border-radius: 24px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12); }
+.hero h1 { font-size: clamp(40px, 9vw, 64px); line-height: 1.05; letter-spacing: -1.5px; margin: 28px 0 12px; }
+.hero p { font-size: clamp(18px, 3.6vw, 21px); color: var(--muted); max-width: 30ch; margin: 0 auto; }
+.pill { display: inline-flex; align-items: center; gap: 8px; margin-top: 30px; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 15px; font-weight: 600; }
+
+/* Equalizer: the logo's five bars, CSS only */
+.eq { display: flex; align-items: flex-end; justify-content: center; gap: 5px; height: 26px; margin-top: 28px; }
+.eq span { width: 5px; border-radius: 3px; background: var(--ink); animation: eq 1.1s ease-in-out infinite alternate; }
+.eq span:nth-child(1) { height: 10px; animation-duration: 0.84s; }
+.eq span:nth-child(2) { height: 22px; animation-duration: 1.1s; }
+.eq span:nth-child(3) { height: 16px; animation-duration: 0.74s; }
+.eq span:nth-child(4) { height: 26px; animation-duration: 1.2s; }
+.eq span:nth-child(5) { height: 12px; animation-duration: 0.94s; }
+@keyframes eq { from { transform: scaleY(0.4); } to { transform: scaleY(1); } }
+.eq span { transform-origin: bottom; }
+@media (prefers-reduced-motion: reduce) { .eq span { animation: none; } }
+
+/* Text pages */
+.page { padding: 24px 0 72px; }
+.page h1 { font-size: clamp(32px, 7vw, 44px); line-height: 1.1; letter-spacing: -0.8px; margin: 12px 0 8px; }
+.page .meta { color: var(--muted); font-size: 15px; margin: 0 0 32px; }
+.page h2 { font-size: 21px; letter-spacing: -0.2px; margin: 40px 0 10px; }
+.page h3 { font-size: 17px; margin: 24px 0 6px; }
+.page p, .page li { color: #2c2c30; }
+.page ul { padding-left: 1.2em; }
+.page li { margin: 6px 0; }
+.card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin: 16px 0; }
+.placeholder { color: var(--muted); font-style: italic; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--card); border-radius: 14px; overflow: hidden; }
+th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; background: #fbfbfa; }
+tr:last-child td { border-bottom: 0; }
+@media (max-width: 560px) {
+  table, thead, tbody, tr, th, td { display: block; }
+  tr:first-child { display: none; }
+  tr { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  td { border: 0; padding: 4px 14px; }
+  td:first-child { font-weight: 600; padding-top: 10px; }
+  td:last-child { color: var(--muted); font-size: 14px; padding-bottom: 10px; }
+}
+
+/* Footer */
+.site-footer { border-top: 1px solid var(--line); padding: 26px 0 40px; font-size: 14px; color: var(--muted); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 16px; }
+.site-footer a { text-decoration: none; }
