@@ -85,3 +85,13 @@ tr:last-child td { border-bottom: 0; }
 .site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 16px; }
 .site-footer a { text-decoration: none; }
+
+/* Desktop 3D scroll scene (only with .has-3d, set by main.js) */
+.scrolly { display: none; }
+.has-3d .scrolly { display: block; position: relative; height: 420vh; }
+.scrolly .sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.scrolly canvas { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease; }
+.scrolly.is-ready canvas { opacity: 1; }
+.has-3d .hero { min-height: 78vh; }
+.scroll-hint { display: none; }
+.has-3d .scroll-hint { display: block; margin-top: 34px; font-size: 13px; color: var(--muted); letter-spacing: 0.4px; }
