@@ -166,23 +166,51 @@ export function start(stage, canvas, onError) {
     });
 
     // ---------- the hand, part of the phone so it always holds it ----------
+    // A right hand as in a typical one-handed grip (phone units, screen facing +z):
+    // palm on the back, thumb up along the right edge, four fingers curling around the left edge.
     const skin = clay(COLORS.skin, 0.55);
+    const nail = clay(0xf3d9c9, 0.35);
     const hand = new THREE.Group(); phone.add(hand);
-    const palm = mesh(new THREE.SphereGeometry(1, 24, 16), skin);
-    palm.scale.set(0.62, 0.72, 0.26); palm.position.set(0.12, -0.72, -0.34); hand.add(palm);
-    // Fingers wrap around the left edge and just grip the frame
-    [-0.3, -0.66, -1.02].forEach((y, i) => {
-      const finger = mesh(new THREE.CapsuleGeometry(0.105, 0.24 - i * 0.03, 6, 12), skin);
-      finger.rotation.x = Math.PI / 2;
-      finger.position.set(-PHONE.w / 2 - 0.07, y, -0.02); hand.add(finger);
-      const tip = mesh(new THREE.SphereGeometry(0.1, 12, 10), skin);
-      tip.scale.set(0.9, 1, 0.7);
-      tip.position.set(-PHONE.w / 2 + 0.01, y, front + 0.03); hand.add(tip);
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    function bone(a, b, radius, material = skin) {
+      const dir = b.clone().sub(a);
+      const segment = mesh(new THREE.CapsuleGeometry(radius, Math.max(0.001, dir.length()), 6, 14), material);
+      segment.position.copy(a).add(b).multiplyScalar(0.5);
+      segment.quaternion.setFromUnitVectors(yAxis, dir.normalize());
+      hand.add(segment);
+      return segment;
+    }
+    function knob(at, radius, scale = [1, 1, 1], material = skin) {
+      const ball = mesh(new THREE.SphereGeometry(radius, 18, 14), material);
+      ball.position.copy(at); ball.scale.set(...scale); hand.add(ball);
+      return ball;
+    }
+    const P = (x, y, z) => new THREE.Vector3(x, y, z);
+    const edge = PHONE.w / 2;
+    // Palm and heel behind the lower half, wrist leaving at the bottom right
+    knob(P(0.22, -0.82, -0.36), 1, [0.72, 0.78, 0.22]);
+    knob(P(0.5, -1.38, -0.32), 1, [0.48, 0.42, 0.26]);
+    // Thumb: a pad at the bottom right, then two segments pointing up along the right edge
+    knob(P(0.66, -1.12, -0.1), 1, [0.24, 0.36, 0.24]);
+    const thumbBase = P(edge + 0.06, -0.98, -0.02), thumbJoint = P(edge + 0.07, -0.34, 0.05), thumbTip = P(edge - 0.01, 0.22, 0.1);
+    bone(thumbBase, thumbJoint, 0.135);
+    knob(thumbJoint, 0.13);
+    bone(thumbJoint, thumbTip, 0.12);
+    knob(thumbTip.clone().add(P(0.035, 0.02, 0.06)), 0.07, [0.9, 1.3, 0.35], nail).rotation.z = -0.1;
+    // Fingers: index on top, little finger lowest and shortest
+    [[0.12, 0.12, 0.0], [-0.24, 0.123, 0.0], [-0.6, 0.118, 0.02], [-0.93, 0.104, 0.06]].forEach(([y, r, tuck]) => {
+      const knuckle = P(-0.22, y - 0.08, -0.38);
+      const back = P(-edge - 0.08 + tuck, y - 0.02, -0.2);
+      const side = P(-edge - 0.1 + tuck, y, 0.02);
+      const tip = P(-edge + 0.03 + tuck, y + 0.02, 0.12);
+      bone(knuckle, back, r);
+      knob(back, r * 0.98);
+      bone(back, side, r * 0.95);
+      knob(side, r * 0.93);
+      bone(side, tip, r * 0.85);
+      knob(tip.clone().add(P(-0.05, 0, 0.04)), r * 0.55, [0.45, 0.9, 0.9], nail);
     });
-    // Thumb along the right edge
-    const thumb = mesh(new THREE.CapsuleGeometry(0.12, 0.46, 6, 12), skin);
-    thumb.rotation.z = -0.2; thumb.position.set(PHONE.w / 2 + 0.08, -0.7, 0.02); hand.add(thumb);
-    const wristLocal = new THREE.Vector3(0.42, -1.45, -0.38);
+    const wristLocal = new THREE.Vector3(0.52, -1.72, -0.36);
 
     // ---------- the character ----------
     const person = new THREE.Group(); scene.add(person);
