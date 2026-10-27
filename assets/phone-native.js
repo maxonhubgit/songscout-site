@@ -44,10 +44,10 @@ export function start(stage, onError) {
     scale = Math.max(0.1, scale);
   };
   const render = (story, motion) => {
-    // No character without WebGL: the phone alone, moved aside while the panel explains
+    // No character without WebGL: the phone alone, centred (moved up only above a bottom sheet)
     const state = story.screen;
     const shift = panelShift(stage);
-    rig.style.transform = `translate(${shift.x * story.explain}px, ${-shift.y * story.explain}px)`;
+    rig.style.transform = `translateY(${-shift.y * story.explain}px)`;
     const { time, lean, pointer, life } = motion;
     const lift = state.lift;
     const n1 = Math.sin(time * 0.5) + 0.4 * Math.sin(time * 1.1 + 1.3);

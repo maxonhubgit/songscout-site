@@ -323,10 +323,10 @@ export function start(stage, canvas, onError) {
       phoneNormal.set(0, 0, 1).applyQuaternion(holder.quaternion).normalize();
       phoneRight.set(1, 0, 0).applyQuaternion(holder.quaternion).normalize();
       phoneUp.set(0, 1, 0).applyQuaternion(holder.quaternion).normalize();
-      // While the panel explains, the phone is framed in the free space beside (or above) it
-      const freeW = view.w - 2 * view.shiftX * state.explain, freeH = view.h - 2 * view.shiftY * state.explain;
+      // The phone stays centred; only a bottom sheet (phones) moves the picture up above it
+      const freeH = view.h - 2 * view.shiftY * state.explain;
       const fit = (PHONE.h * PHONE_SCALE * 0.5) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * (view.h / freeH);
-      const fitWide = fit / Math.min(1, (freeW / freeH) / 0.62);
+      const fitWide = fit / Math.min(1, (view.w / freeH) / 0.62);
       const distance = Math.max(fit, fitWide) * (compact ? 1.4 : 1.42);
       // Close-up: from above the right shoulder toward the screen, near enough to fill the frame
       close.copy(OVER_SHOULDER_EYE).sub(center).normalize().multiplyScalar(distance).add(center);
@@ -361,7 +361,7 @@ export function start(stage, canvas, onError) {
           front + 0.012 + layer.depth * 0.003 + offset * (compact ? 0.72 : 0.92),
         );
       }
-      camera.setViewOffset(view.w, view.h, -view.shiftX * state.explain, view.shiftY * state.explain, view.w, view.h);
+      camera.setViewOffset(view.w, view.h, 0, view.shiftY * state.explain, view.w, view.h);
       renderer.render(scene, camera);
       if (shaderFailed || renderer.getContext().isContextLost()) throw new Error('The 3D renderer is unavailable');
     };
