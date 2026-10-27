@@ -186,24 +186,25 @@ export function start(stage, canvas, onError) {
 
     // ---------- the character ----------
     const person = new THREE.Group(); scene.add(person);
-    const shirt = clay(COLORS.shirt, 0.75);
+    // The body has its own materials so it can fade out in the close-up while the hand stays
+    const shirt = clay(COLORS.shirt, 0.75), armShirt = clay(COLORS.shirt, 0.75), bodySkin = clay(COLORS.skin, 0.55);
     const torso = mesh(new THREE.CapsuleGeometry(1.15, 1.7, 8, 24), shirt);
     torso.scale.set(1.18, 1, 0.72); torso.position.set(0, 3.45, 0.05); person.add(torso);
     const collar = mesh(new THREE.TorusGeometry(0.46, 0.07, 10, 28), shirt);
     collar.rotation.x = Math.PI / 2; collar.position.set(0, 5.05, 0.05); person.add(collar);
     const pin = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.04, 16), clay(COLORS.pin, 0.4));
     pin.rotation.x = Math.PI / 2; pin.position.set(0.48, 4.35, -0.8); person.add(pin);
-    const neck = mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.75, 20), skin);
+    const neck = mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.75, 20), bodySkin);
     neck.position.set(0, 5.1, 0.02); person.add(neck);
 
     const headGroup = new THREE.Group(); headGroup.position.copy(HEAD); person.add(headGroup);
-    const head = mesh(new THREE.SphereGeometry(0.95, 40, 32), skin);
+    const head = mesh(new THREE.SphereGeometry(0.95, 40, 32), bodySkin);
     head.scale.set(0.96, 1.05, 1); headGroup.add(head);
     // Hair: a cap over the top and back of the head
     const hair = mesh(new THREE.SphereGeometry(1.0, 40, 24, 0, Math.PI * 2, 0, Math.PI * 0.6), clay(COLORS.hair, 0.85));
     hair.scale.set(0.98, 1.07, 1.03); hair.rotation.x = 0.35; hair.position.set(0, 0.04, 0.03); headGroup.add(hair);
     [-1, 1].forEach(side => {
-      const ear = mesh(new THREE.SphereGeometry(0.2, 16, 12), skin);
+      const ear = mesh(new THREE.SphereGeometry(0.2, 16, 12), bodySkin);
       ear.scale.set(0.5, 1, 0.8); ear.position.set(side * 0.92, -0.05, 0.02); headGroup.add(ear);
     });
     // Headphones: band over the head, cups with an ember ring
@@ -224,12 +225,12 @@ export function start(stage, canvas, onError) {
     });
 
     // Arms: sleeves (shirt) from the shoulder, skin from the elbow; joints are spheres
-    function makeArm(upperRadius, lowerRadius) {
-      const upper = mesh(new THREE.CylinderGeometry(upperRadius, upperRadius, 1, 20), shirt);
-      const lower = mesh(new THREE.CylinderGeometry(lowerRadius, lowerRadius, 1, 20), skin);
-      const shoulderBall = mesh(new THREE.SphereGeometry(upperRadius * 1.05, 20, 14), shirt);
-      const elbowBall = mesh(new THREE.SphereGeometry(lowerRadius * 1.08, 20, 14), skin);
-      const wristBall = mesh(new THREE.SphereGeometry(lowerRadius * 0.95, 16, 12), skin);
+    function makeArm(upperRadius, lowerRadius, sleeve, armSkin) {
+      const upper = mesh(new THREE.CylinderGeometry(upperRadius, upperRadius, 1, 20), sleeve);
+      const lower = mesh(new THREE.CylinderGeometry(lowerRadius, lowerRadius, 1, 20), armSkin);
+      const shoulderBall = mesh(new THREE.SphereGeometry(upperRadius * 1.05, 20, 14), sleeve);
+      const elbowBall = mesh(new THREE.SphereGeometry(lowerRadius * 1.08, 20, 14), armSkin);
+      const wristBall = mesh(new THREE.SphereGeometry(lowerRadius * 0.95, 16, 12), armSkin);
       scene.add(upper, lower, shoulderBall, elbowBall, wristBall);
       return { upper, lower, shoulderBall, elbowBall, wristBall };
     }
@@ -248,10 +249,14 @@ export function start(stage, canvas, onError) {
       arm.elbowBall.position.copy(elbow);
       arm.wristBall.position.copy(wristPoint);
     }
-    const rightArm = makeArm(0.3, 0.22);
-    const leftArm = makeArm(0.3, 0.22);
-    const leftHand = mesh(new THREE.SphereGeometry(0.28, 16, 12), skin);
+    const rightArm = makeArm(0.3, 0.22, armShirt, skin);
+    const leftArm = makeArm(0.3, 0.22, shirt, bodySkin);
+    const leftHand = mesh(new THREE.SphereGeometry(0.28, 16, 12), bodySkin);
     leftHand.scale.set(0.8, 1.1, 0.7); scene.add(leftHand);
+    // Everything of the character except the phone hand and its arm fades out in the close-up
+    const fadeMeshes = [leftHand, ...Object.values(leftArm)];
+    person.traverse(object => { if (object.isMesh) fadeMeshes.push(object); });
+    const fadeMaterials = [...new Set(fadeMeshes.map(m => m.material))];
 
     // ---------- phone poses ----------
     const lowQuat = new THREE.Quaternion(), highQuat = new THREE.Quaternion();
@@ -292,7 +297,6 @@ export function start(stage, canvas, onError) {
     const render = (state, motion) => {
       const { time, lean, pointer, life } = motion;
       const screen = state.screen;
-      const lift = screen.lift;
 
       // Character: nods to the music, breathes, sways a little
       const beat = Math.sin(time * 4.6);
@@ -307,8 +311,8 @@ export function start(stage, canvas, onError) {
       holder.position.y += Math.sin(raise * Math.PI) * 0.35 + 0.02 * Math.sin(time * 1.1) * life;
       holder.quaternion.slerpQuaternions(lowQuat, highQuat, raise);
       // Most of the way toward the camera while it closes in; a slight angle keeps the depth visible
-      holder.quaternion.slerp(facingQuat, ease(state.zoom) * 0.8);
-      phone.rotation.set(0.06 * lean, -0.06 * lift + 0.04 * pointer.x, 0.01 * Math.sin(time * 0.8) * life);
+      holder.quaternion.slerp(facingQuat, ease(state.zoom) * 0.92);
+      phone.rotation.set(0.06 * lean, 0.04 * pointer.x, 0.01 * Math.sin(time * 0.8) * life);
       holder.updateMatrixWorld(true);
 
       // Right arm reaches the wrist under the phone; left arm hangs relaxed
@@ -327,11 +331,18 @@ export function start(stage, canvas, onError) {
       const freeH = view.h - 2 * view.shiftY * state.explain;
       const fit = (PHONE.h * PHONE_SCALE * 0.5) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * (view.h / freeH);
       const fitWide = fit / Math.min(1, (view.w / freeH) / 0.62);
-      const distance = Math.max(fit, fitWide) * (compact ? 1.4 : 1.42);
+      const distance = Math.max(fit, fitWide) * (compact ? 1.42 : 1.24);
       // Close-up: from above the right shoulder toward the screen, near enough to fill the frame
       close.copy(OVER_SHOULDER_EYE).sub(center).normalize().multiplyScalar(distance).add(center);
       close.x = Math.max(close.x, 1.95); // never into the head or the headphones
       const turn = ease(state.turn), zoom = ease(state.zoom);
+      const presence = 1 - ease(clamp((zoom - 0.55) / 0.37));
+      for (const material of fadeMaterials) {
+        material.opacity = presence;
+        material.transparent = presence < 1;
+        material.depthWrite = presence > 0.99;
+      }
+      for (const m of fadeMeshes) m.visible = presence > 0.01;
       // Tall screens see less to the sides: step back so the head and headphones fit
       const narrow = Math.max(1, 0.95 / camera.aspect);
       wide.copy(behindHead).sub(behindLook).multiplyScalar(narrow).add(behindLook);
